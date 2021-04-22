@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "*.html": "html",
+        "initializer_list": "cpp",
+        "type_traits": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp"
+    }
+}
