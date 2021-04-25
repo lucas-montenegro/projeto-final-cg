@@ -23,7 +23,17 @@ typedef struct Object {
 	vector<Vec2> texCoords;
 } Object;
 
-Object mesa = {};
+vector<string> objectPath = {
+	"../obj/base_abajur.obj", // base abajur
+	"../obj/cadeira.obj", // cadeira
+	"../obj/cama.obj" // cama
+
+
+};
+
+int objectSize = 3;
+
+Object objects[3];
 
 int WINDOW_WIDTH = 640, WINDOW_HEIGHT = 480;
 
@@ -43,170 +53,7 @@ void keyboard(unsigned char key, int x, int y);
 
 void mouse(int x, int y);
 
-bool load_obj(const char* path, Object *object);
-
-int main(int argc, char** argv) {
-	if(argc == 3) {
-		WINDOW_WIDTH = atoi(argv[1]);
-		WINDOW_HEIGHT = atoi(argv[2]);	
-	}
-
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
-	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-	glutCreateWindow("Quarto");
-	glutWarpPointer(WINDOW_WIDTH / 2 , WINDOW_HEIGHT / 2);  //centers the cursor
-
-	glutDisplayFunc(display);
-	glutKeyboardFunc(keyboard);
-	glutPassiveMotionFunc(mouse);
-
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-	glEnable(GL_TEXTURE_2D);
-	glEnable(GL_COLOR_MATERIAL);
-	glutSetCursor(GLUT_CURSOR_NONE);
-	
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(75.0f, (WINDOW_WIDTH * 1.0) / (WINDOW_HEIGHT * 1.0), 10e-3, 10e3);
-
-	// TODO -> CREATE A FUNC TO LOAD ALL THE OBJECTS
-
-	if(!load_obj("../obj/mesa.obj", &mesa)) {
-		perror("Erro ao abrir o arquivo");
-		return -1;
-	}
-
-	unsigned int textureID;
-    glGenTextures(1, &textureID);
-
-    int width, height, nrComponents;
-    unsigned char *data = stbi_load("../../madeira.jpg", &width, &height, &nrComponents, 0);
-    if (data)
-    {
-        GLenum format;
-        if (nrComponents == 1)
-            format = GL_RED;
-        else if (nrComponents == 3)
-            format = GL_RGB;
-        else if (nrComponents == 4)
-            format = GL_RGBA;
-
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        stbi_image_free(data);
-    }
-    else
-    {
-        perror("Texture failed to load");
-        stbi_image_free(data);
-    }
-	
-	glutMainLoop();
-
-	return 0;
-}
-
-
-void display() {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	// View matrix
-	gluLookAt(eyeX, eyeY, eyeZ, eyeX + centerX, eyeY + centerY, eyeZ + centerZ, upX, upY, upZ);
-	// Model matrix
-	glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
-	
-	int i;
-
-	// drawing table
-	glBegin(GL_TRIANGLES);
-	for(i = 0; i < mesa.vertices.size(); i++){
-		glNormal3f(mesa.normals[i].x, mesa.normals[i].y, mesa.normals[i].z);
-		glTexCoord2f(mesa.texCoords[i].x, mesa.texCoords[i].y);
-		glVertex3f(mesa.vertices[i].x, mesa.vertices[i].y, mesa.vertices[i].z);
-	}
-	glEnd();
-
-
-	glutSwapBuffers();
-}
-
-void mouse(int x, int y) {
-	if(!flag) {
-		float xoffset = x - (WINDOW_WIDTH / 2);
-		float yoffset = (WINDOW_HEIGHT / 2) - y; // reversed since y-coordinates go from bottom to top
-
-		yaw += xoffset * sensivity;
-		pitch += yoffset * sensivity;
-
-		if(pitch > 89.0f) {
-			pitch =  89.0f;
-		}
-		else if(pitch < -89.0f) {
-			pitch = -89.0f;
-		}
-
-		glm::vec3 direction, cameraFront;
-		direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-		direction.y = sin(glm::radians(pitch));
-		direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-		cameraFront = glm::normalize(direction);
-
-		centerX = cameraFront.x;
-		centerY = cameraFront.y;
-		centerZ = cameraFront.z;
-
-		glutWarpPointer(WINDOW_WIDTH / 2 , WINDOW_HEIGHT / 2);  //centers the cursor
-		flag = 1;
-	}
-	else {
-		flag = 0;
-	}
-
-	glutPostRedisplay();
-}
-
-void keyboard(unsigned char key, int x, int y){
-	GLdouble movementSpeed = 0.05;
-  	switch (key) {
-	case 27: // esc
-		exit(0);
-		break;
-	case 32: // spacebar
-		eyeY += movementSpeed;
-		glutPostRedisplay();
-		break;
-	case 'b':
-		eyeY -= movementSpeed;
-		glutPostRedisplay();
-		break;
-	case 'w':
-		eyeX += cos(glm::radians(yaw)) * movementSpeed; 
-		eyeY += sin(glm::radians(pitch)) * movementSpeed;
-		eyeZ += sin(glm::radians(yaw)) * cos(glm::radians(pitch)) * movementSpeed;
-		glutPostRedisplay();
-		break;
-	case 's':
-		eyeX -= cos(glm::radians(yaw)) * movementSpeed; 
-		eyeY -= sin(glm::radians(pitch)) * movementSpeed;
-		eyeZ -= sin(glm::radians(yaw)) * cos(glm::radians(pitch)) * movementSpeed;
-		glutPostRedisplay();
-		break;
-	}
-}
-
-
-bool load_obj(const char* path, Object *object) {
+bool loadObj(const char* path, Object *object) {
 	FILE* file = fopen(path, "r");
 
 	if(!file) {
@@ -262,4 +109,196 @@ bool load_obj(const char* path, Object *object) {
 	fclose(file);
 
 	return true;
+}
+
+bool loadAllobjects() {
+	for(int i = 0; i < objectSize; i++) {
+		if(!loadObj(objectPath[i].c_str(), &objects[i])) {
+			perror("Erro ao abrir o arquivo");
+			return false;
+		}
+	}
+	
+	return true;
+}
+
+int main(int argc, char** argv) {
+	if(argc == 3) {
+		WINDOW_WIDTH = atoi(argv[1]);
+		WINDOW_HEIGHT = atoi(argv[2]);	
+	}
+
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
+	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+	glutCreateWindow("Quarto");
+	glutWarpPointer(WINDOW_WIDTH / 2 , WINDOW_HEIGHT / 2);  //centers the cursor
+
+	glutDisplayFunc(display);
+	glutKeyboardFunc(keyboard);
+	glutPassiveMotionFunc(mouse);
+
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_COLOR_MATERIAL);
+	glutSetCursor(GLUT_CURSOR_NONE);
+	
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(75.0f, (WINDOW_WIDTH * 1.0) / (WINDOW_HEIGHT * 1.0), 10e-3, 10e3);
+
+	// TODO -> CREATE A FUNC TO LOAD ALL THE objects[0]
+
+	if(!loadAllobjects()) {
+		perror("Erro ao carregar todos os arquivos");
+		return -1;
+	}
+
+	unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load("../../madeira.jpg", &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        perror("Texture failed to load");
+        stbi_image_free(data);
+    }
+	
+	glutMainLoop();
+
+	return 0;
+}
+
+
+void display() {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	// View matrix
+	gluLookAt(eyeX, eyeY, eyeZ, eyeX + centerX, eyeY + centerY, eyeZ + centerZ, upX, upY, upZ);
+	// Model matrix
+	glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+	
+	int i, index = 0;
+
+	// drawing base abajur
+	glBegin(GL_TRIANGLES);
+	for(i = 0; i < objects[index].vertices.size(); i++){
+		glNormal3f(objects[index].normals[i].x, objects[index].normals[i].y, objects[index].normals[i].z);
+		glTexCoord2f(objects[index].texCoords[i].x, objects[index].texCoords[i].y);
+		glVertex3f(objects[index].vertices[i].x, objects[index].vertices[i].y, objects[index].vertices[i].z);
+	}
+	glEnd();
+
+	index++;
+
+	// drawing cadeira
+	glBegin(GL_TRIANGLES);
+	for(i = 0; i < objects[index].vertices.size(); i++){
+		glNormal3f(objects[index].normals[i].x, objects[index].normals[i].y, objects[index].normals[i].z);
+		glTexCoord2f(objects[index].texCoords[i].x, objects[index].texCoords[i].y);
+		glVertex3f(objects[index].vertices[i].x, objects[index].vertices[i].y, objects[index].vertices[i].z);
+	}
+	glEnd();
+
+	index++;
+
+	// drawing cama
+	glBegin(GL_TRIANGLES);
+	for(i = 0; i < objects[index].vertices.size(); i++){
+		glNormal3f(objects[index].normals[i].x, objects[index].normals[i].y, objects[index].normals[i].z);
+		glTexCoord2f(objects[index].texCoords[i].x, objects[index].texCoords[i].y);
+		glVertex3f(objects[index].vertices[i].x, objects[index].vertices[i].y, objects[index].vertices[i].z);
+	}
+	glEnd();
+
+	glutSwapBuffers();
+}
+
+void mouse(int x, int y) {
+	if(!flag) {
+		float xoffset = x - (WINDOW_WIDTH / 2);
+		float yoffset = (WINDOW_HEIGHT / 2) - y; // reversed since y-coordinates go from bottom to top
+
+		yaw += xoffset * sensivity;
+		pitch += yoffset * sensivity;
+
+		if(pitch > 89.0f) {
+			pitch =  89.0f;
+		}
+		else if(pitch < -89.0f) {
+			pitch = -89.0f;
+		}
+
+		glm::vec3 direction, cameraFront;
+		direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+		direction.y = sin(glm::radians(pitch));
+		direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+		cameraFront = glm::normalize(direction);
+
+		centerX = cameraFront.x;
+		centerY = cameraFront.y;
+		centerZ = cameraFront.z;
+
+		glutWarpPointer(WINDOW_WIDTH / 2 , WINDOW_HEIGHT / 2);  //centers the cursor
+		flag = 1;
+	}
+	else {
+		flag = 0;
+	}
+
+	glutPostRedisplay();
+}
+
+void keyboard(unsigned char key, int x, int y){
+	GLdouble movementSpeed = 0.5;
+  	switch (key) {
+	case 27: // esc
+		exit(0);
+		break;
+	case 32: // spacebar
+		eyeY += movementSpeed;
+		glutPostRedisplay();
+		break;
+	case 'b':
+		eyeY -= movementSpeed;
+		glutPostRedisplay();
+		break;
+	case 'w':
+		eyeX += cos(glm::radians(yaw)) * movementSpeed; 
+		eyeY += sin(glm::radians(pitch)) * movementSpeed;
+		eyeZ += sin(glm::radians(yaw)) * cos(glm::radians(pitch)) * movementSpeed;
+		glutPostRedisplay();
+		break;
+	case 's':
+		eyeX -= cos(glm::radians(yaw)) * movementSpeed; 
+		eyeY -= sin(glm::radians(pitch)) * movementSpeed;
+		eyeZ -= sin(glm::radians(yaw)) * cos(glm::radians(pitch)) * movementSpeed;
+		glutPostRedisplay();
+		break;
+	}
 }
