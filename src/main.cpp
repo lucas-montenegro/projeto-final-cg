@@ -21,27 +21,64 @@ typedef struct Vec3 {
 typedef struct Object {
 	vector<Vec3> vertices, normals;
 	vector<Vec2> texCoords;
+	int textureId;
 } Object;
 
 vector<string> objectPath = {
 	"../obj/base_abajur.obj", // base abajur
 	"../obj/cadeira.obj", // cadeira
-	"../obj/cama.obj" // cama
-
-
+	"../obj/cama.obj", // cama
+    "../obj/colchao.obj", // colchao
+    "../obj/mesa.obj", // mesa
+    "../obj/moldura.obj", // moldura 
+    "../obj/pernas.obj", // pernas
+    "../obj/quadro.obj", // quadro
+    "../obj/quarto.obj", // quarto
+    "../obj/topo_abajur.obj", // topo abajur
+    "../obj/travesseiro.obj", // travesseiro
+    "../obj/ventilador.obj", // ventilador
+    "../obj/helices.obj", // helices ventilador
+    "../obj/janela_direita.obj", // janela direita
+    "../obj/janela_esquerda.obj", // janela esquerda
+    "../obj/macaneta_direita.obj", // macaneta direita
+    "../obj/macaneta_esquerda.obj", // macaneta esquerda
+    "../obj/porta_direita.obj", // porta direita
+    "../obj/porta_esquerda.obj", // porta esqueda
 };
 
-int objectSize = 3;
+vector<string> texturePath = {
+	"../textures/cadeira1.jpg", // cadeira
+	"../textures/travesseiro.jpg", // travesseiro
+	"../textures/colchao.png", // colchao
+	"../textures/janela.png", // janela
+	"../textures/madeira.jpg", // madeira clara
+	"../textures/madeira2.jpg", // madeira porta
+	"../textures/madeira3.jpg", // madeira escura
+	"../textures/metal2.jpg", // metal escuro
+	"../textures/pintura.jpg", // pintura 
+	"../textures/vidro.jpg", // vidro 
+	"../textures/metal1.jpg", // metal claro
+};
 
-Object objects[3];
+int objectCount = 19;
 
-int WINDOW_WIDTH = 640, WINDOW_HEIGHT = 480;
+Object objects[19];
+
+int textureCount = 11;
+
+GLuint textures[11];
+
+int WINDOW_WIDTH = 1920, WINDOW_HEIGHT = 1080;
+
+int displayFlag = 0;
 
 GLdouble eyeX = 0.0, eyeY = 0.0, eyeZ = 5.0;
 GLdouble centerX = 0.0, centerY = 0.0, centerZ = 0.0;
 GLdouble upX = 0.0, upY = 1.0, upZ = 0.0;
 GLdouble lastPosX = WINDOW_WIDTH / 2.0, lastPosY = WINDOW_HEIGHT / 2.0;
-GLdouble sensivity = 0.5;
+GLdouble sensivity = 0.01;
+GLdouble doorAngle = 0.0;
+GLdouble windowAngle = 0.0;
 
 GLdouble pitch = 0.0, yaw = -90.0;
 
@@ -52,6 +89,21 @@ void display();
 void keyboard(unsigned char key, int x, int y);
 
 void mouse(int x, int y);
+
+void bindObjectTexture() {
+	objects[0].textureId = objects[11].textureId = 7;
+	objects[1].textureId = 0;
+	objects[2].textureId = objects[4].textureId = objects[5].textureId =  4;
+	objects[3].textureId = 2;
+	objects[6].textureId = objects[12].textureId = 10;
+	objects[7].textureId = 8;
+	objects[8].textureId = 6;
+	objects[9].textureId = 9;
+	objects[10].textureId = 1;
+	objects[13].textureId = objects[14].textureId = 3;
+	objects[15].textureId = objects[16].textureId = 4;
+	objects[17].textureId = objects[18].textureId = 5;
+}
 
 bool loadObj(const char* path, Object *object) {
 	FILE* file = fopen(path, "r");
@@ -111,10 +163,58 @@ bool loadObj(const char* path, Object *object) {
 	return true;
 }
 
-bool loadAllobjects() {
-	for(int i = 0; i < objectSize; i++) {
+bool loadAllObjects() {
+	for(int i = 0; i < objectCount; i++) {
 		if(!loadObj(objectPath[i].c_str(), &objects[i])) {
-			perror("Erro ao abrir o arquivo");
+			perror("Erro ao abrir o arquivo: ");
+            perror(objectPath[i].c_str());
+			return false;
+		}
+	}
+	
+	return true;
+}
+
+
+bool loadTexture(int index) {
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(texturePath[index].c_str(), &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textures[index]);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        stbi_image_free(data);
+		return false;
+    }
+
+	return true;
+}
+
+bool loadAllTextures() {
+	glGenTextures(11, textures);
+
+	for(int i = 0; i < textureCount; i++) {
+		if(!loadTexture(i)) {
+			perror("Erro ao carregar a textura: ");
+            perror(texturePath[i].c_str());
 			return false;
 		}
 	}
@@ -149,44 +249,18 @@ int main(int argc, char** argv) {
 	glLoadIdentity();
 	gluPerspective(75.0f, (WINDOW_WIDTH * 1.0) / (WINDOW_HEIGHT * 1.0), 10e-3, 10e3);
 
-	// TODO -> CREATE A FUNC TO LOAD ALL THE objects[0]
-
-	if(!loadAllobjects()) {
+	if(!loadAllObjects()) {
 		perror("Erro ao carregar todos os arquivos");
 		return -1;
 	}
 
-	unsigned int textureID;
-    glGenTextures(1, &textureID);
+	if(!loadAllTextures()) {
+		perror("Erro ao carregar todos as texturas");
+		return -1;
+	}
 
-    int width, height, nrComponents;
-    unsigned char *data = stbi_load("../../madeira.jpg", &width, &height, &nrComponents, 0);
-    if (data)
-    {
-        GLenum format;
-        if (nrComponents == 1)
-            format = GL_RED;
-        else if (nrComponents == 3)
-            format = GL_RGB;
-        else if (nrComponents == 4)
-            format = GL_RGBA;
-
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        stbi_image_free(data);
-    }
-    else
-    {
-        perror("Texture failed to load");
-        stbi_image_free(data);
-    }
-	
+    bindObjectTexture();
+		
 	glutMainLoop();
 
 	return 0;
@@ -205,37 +279,52 @@ void display() {
 	
 	int i, index = 0;
 
-	// drawing base abajur
-	glBegin(GL_TRIANGLES);
-	for(i = 0; i < objects[index].vertices.size(); i++){
-		glNormal3f(objects[index].normals[i].x, objects[index].normals[i].y, objects[index].normals[i].z);
-		glTexCoord2f(objects[index].texCoords[i].x, objects[index].texCoords[i].y);
-		glVertex3f(objects[index].vertices[i].x, objects[index].vertices[i].y, objects[index].vertices[i].z);
-	}
-	glEnd();
+    for(index = 0; index < objectCount; index++) {
+        if(index == 13) { // janela direita
+		    glPushMatrix();
+            glTranslatef(objects[index].vertices[0].x, objects[index].vertices[0].y, objects[index].vertices[0].z);
+            glRotatef(-windowAngle, 0.0, 0.0f, 1.0f);
+            glTranslatef(-objects[index].vertices[0].x, -objects[index].vertices[0].y, -objects[index].vertices[0].z);
+		}
 
-	index++;
+        else if(index == 14) { // janela esquerda
+            glPushMatrix();
+            float larguraJanela = 0.33;
+            float comprimentoJanela = 3.78;
+            glTranslatef(objects[index].vertices[0].x + comprimentoJanela, objects[index].vertices[0].y - larguraJanela, objects[index].vertices[0].z);
+            glRotatef(windowAngle, 0.0, 0.0f, 1.0f);
+            glTranslatef(-objects[index].vertices[0].x - comprimentoJanela, -objects[index].vertices[0].y + larguraJanela, -objects[index].vertices[0].z);
+        }
 
-	// drawing cadeira
-	glBegin(GL_TRIANGLES);
-	for(i = 0; i < objects[index].vertices.size(); i++){
-		glNormal3f(objects[index].normals[i].x, objects[index].normals[i].y, objects[index].normals[i].z);
-		glTexCoord2f(objects[index].texCoords[i].x, objects[index].texCoords[i].y);
-		glVertex3f(objects[index].vertices[i].x, objects[index].vertices[i].y, objects[index].vertices[i].z);
-	}
-	glEnd();
+		else if(index == 17 || index == 15) { // porta e macaneta direita
+		    glPushMatrix();
+            glTranslatef(objects[17].vertices[0].x - 0.05, objects[17].vertices[0].y, objects[17].vertices[0].z);
+            glRotatef(-doorAngle, 0.0, 0.0f, 1.0f);
+            glTranslatef(-objects[17].vertices[0].x + 0.05, -objects[17].vertices[0].y, -objects[17].vertices[0].z);
+		}
+        else if(index == 18 || index == 16) { // porta e macaneta esquerda
+            glPushMatrix();
+            float tamanhoPorta = 3.01;
+            glTranslatef(objects[18].vertices[0].x + tamanhoPorta, objects[18].vertices[0].y, objects[18].vertices[0].z);
+            glRotatef(doorAngle, 0.0, 0.0f, 1.0f);
+            glTranslatef(-objects[18].vertices[0].x - tamanhoPorta, -objects[18].vertices[0].y, -objects[18].vertices[0].z);
+        }
 
-	index++;
+		glBindTexture(GL_TEXTURE_2D, textures[objects[index].textureId]);
+        glBegin(GL_TRIANGLES);
+        for(i = 0; i < objects[index].vertices.size(); i++) {
+            glNormal3f(objects[index].normals[i].x, objects[index].normals[i].y, objects[index].normals[i].z);
+            glTexCoord2f(objects[index].texCoords[i].x, objects[index].texCoords[i].y);
+            glVertex3f(objects[index].vertices[i].x, objects[index].vertices[i].y, objects[index].vertices[i].z);
+        }
+        glEnd();
 
-	// drawing cama
-	glBegin(GL_TRIANGLES);
-	for(i = 0; i < objects[index].vertices.size(); i++){
-		glNormal3f(objects[index].normals[i].x, objects[index].normals[i].y, objects[index].normals[i].z);
-		glTexCoord2f(objects[index].texCoords[i].x, objects[index].texCoords[i].y);
-		glVertex3f(objects[index].vertices[i].x, objects[index].vertices[i].y, objects[index].vertices[i].z);
-	}
-	glEnd();
-
+		if(index >= 13) {
+			glPopMatrix();
+        }
+        
+    }
+    displayFlag++;
 	glutSwapBuffers();
 }
 
@@ -282,23 +371,41 @@ void keyboard(unsigned char key, int x, int y){
 		break;
 	case 32: // spacebar
 		eyeY += movementSpeed;
-		glutPostRedisplay();
 		break;
 	case 'b':
 		eyeY -= movementSpeed;
-		glutPostRedisplay();
 		break;
 	case 'w':
 		eyeX += cos(glm::radians(yaw)) * movementSpeed; 
 		eyeY += sin(glm::radians(pitch)) * movementSpeed;
 		eyeZ += sin(glm::radians(yaw)) * cos(glm::radians(pitch)) * movementSpeed;
-		glutPostRedisplay();
 		break;
 	case 's':
 		eyeX -= cos(glm::radians(yaw)) * movementSpeed; 
 		eyeY -= sin(glm::radians(pitch)) * movementSpeed;
 		eyeZ -= sin(glm::radians(yaw)) * cos(glm::radians(pitch)) * movementSpeed;
-		glutPostRedisplay();
 		break;
+    case 'J':
+        if(windowAngle > 0.0) {
+            windowAngle -= 15.0;
+        }
+        break;
+    case 'j':
+        if(windowAngle < 90) {
+            windowAngle += 15.0;
+        }
+        break;
+    case 'P':
+        if(doorAngle > 0.0) {
+            doorAngle -= 15.0;
+        }
+        break;
+    case 'p':
+        if(doorAngle < 90.0) {
+            doorAngle += 15.0;
+        }
+        break;
 	}
+
+    glutPostRedisplay();
 }
