@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 #include <string.h>
+#include <sstream>
 #include <GL/gl.h>
 #include <glm/glm.hpp>
 #include <GL/freeglut.h>
@@ -9,6 +10,7 @@
 #define PI 3.14
 
 using namespace std;
+using namespace glm;
 
 typedef struct Vec2 {
 	float x, y;
@@ -44,6 +46,7 @@ vector<string> objectPath = {
     "../obj/macaneta_esquerda.obj", // macaneta esquerda
     "../obj/porta_direita.obj", // porta direita
     "../obj/porta_esquerda.obj", // porta esqueda
+	"../obj/lixo.obj" // lixeira
 };
 
 vector<string> texturePath = {
@@ -53,22 +56,23 @@ vector<string> texturePath = {
 	"../textures/janela.png", // janela
 	"../textures/madeira.jpg", // madeira clara
 	"../textures/madeira2.jpg", // madeira porta
-	"../textures/madeira3.jpg", // madeira escura
+	"../textures/madeira2.jpg", // madeira escura 
 	"../textures/metal2.jpg", // metal escuro
 	"../textures/pintura.jpg", // pintura 
 	"../textures/vidro.jpg", // vidro 
 	"../textures/metal1.jpg", // metal claro
+	"../textures/lixo.jpg", // lixeira
 };
 
-int objectCount = 19;
+const int objectCount = 20;
 
-Object objects[19];
+Object objects[objectCount];
 
-int textureCount = 11;
+const int textureCount = 12;
 
-GLuint textures[11];
+GLuint textures[textureCount];
 
-int WINDOW_WIDTH = 1920, WINDOW_HEIGHT = 1080;
+int WINDOW_WIDTH = 560, WINDOW_HEIGHT = 480;
 
 int displayFlag = 0;
 
@@ -76,10 +80,11 @@ GLdouble eyeX = 0.0, eyeY = 0.0, eyeZ = 5.0;
 GLdouble centerX = 0.0, centerY = 0.0, centerZ = 0.0;
 GLdouble upX = 0.0, upY = 1.0, upZ = 0.0;
 GLdouble lastPosX = WINDOW_WIDTH / 2.0, lastPosY = WINDOW_HEIGHT / 2.0;
-GLdouble sensivity = 0.01;
+GLdouble sensivity = 0.1;
 GLdouble doorAngle = 0.0;
 GLdouble windowAngle = 0.0;
 
+vec3 direction;
 GLdouble pitch = 0.0, yaw = -90.0;
 
 bool flag = 0;
@@ -103,62 +108,61 @@ void bindObjectTexture() {
 	objects[13].textureId = objects[14].textureId = 3;
 	objects[15].textureId = objects[16].textureId = 4;
 	objects[17].textureId = objects[18].textureId = 5;
+	objects[19].textureId = 11;
 }
 
 bool loadObj(const char* path, Object *object) {
-	FILE* file = fopen(path, "r");
+	ifstream file(path);
 
 	if(!file) {
 		return false;
 	}
 
-	char buffer[512] = "";
-	
 	vector<Vec3> tempVertices;
 	vector<Vec3> tempNormals;
 	vector<Vec2> tempTexCoords;
 
 	float x, y, z;
 
-	while(fgets(buffer, 512, file)){
-		if(buffer[0] == '#') { // Comment
+	string line, keyword;
+
+	while(getline(file, line)) {
+		istringstream iss(line);
+		iss >> keyword;
+
+		if(keyword.compare("#") == 0) { // Comment
 			continue;
 		}
-
-		char *token = strtok(buffer, " ");
 	
-		if(strcmp(token, "v") == 0){
+		if(keyword.compare("v") == 0){
 			// Parse vertex
-			x = atof(strtok(NULL, " "));
-			y = atof(strtok(NULL, " "));
-			z = atof(strtok(NULL, " "));
+			iss >> x >> y >> z;
 			tempVertices.push_back({x, z, y}); // swapping y-axis with z-axis 
 		}
-		else if(strcmp(token, "vn") == 0) {
+		else if(keyword.compare("vn") == 0) {
 			// Parse normal vector
-			x = atof(strtok(NULL, " "));
-			y = atof(strtok(NULL, " "));
-			z = atof(strtok(NULL, " "));
+			iss >> x >> y >> z;
 			tempNormals.push_back({x, z, y}); // swapping y-axis with z-axis
 		}
-		else if(strcmp(token, "vt") == 0) {
+		else if(keyword.compare("vt") == 0) {
 			// Parse texture coordinate
-			x = atof(strtok(NULL, " "));
-			y = -atof(strtok(NULL, " "));
-			tempTexCoords.push_back({x, y});
+			iss >> x >> y;
+			tempTexCoords.push_back({x, -y});
 		}
-		else if(strcmp(token, "f") == 0) {
+		else if(keyword.compare("f") == 0) {
 			// Parse face
-			int i;
-			for(i = 0; i < 3 ;i++){
-				object->vertices.push_back(tempVertices[atoi(strtok(NULL, "/")) - 1]);
-				object->texCoords.push_back(tempTexCoords[atoi(strtok(NULL, "/")) - 1]);
-				object->normals.push_back(tempNormals[atoi(strtok(NULL, " ")) - 1]);
+			int i, posVertices, posTexCoords, posNormals;
+			char slash;
+			for(i = 0; i < 3 ;i++) {
+				iss >> posVertices >> slash >> posTexCoords >> slash >> posNormals;
+				object->vertices.push_back(tempVertices[posVertices - 1]);
+				object->texCoords.push_back(tempTexCoords[posTexCoords - 1]);
+				object->normals.push_back(tempNormals[posNormals - 1]);
 			}
 		}
 	}
 
-	fclose(file);
+	file.close();
 
 	return true;
 }
@@ -175,7 +179,6 @@ bool loadAllObjects() {
 	return true;
 }
 
-
 bool loadTexture(int index) {
     int width, height, nrComponents;
     unsigned char *data = stbi_load(texturePath[index].c_str(), &width, &height, &nrComponents, 0);
@@ -190,7 +193,7 @@ bool loadTexture(int index) {
             format = GL_RGBA;
 
         glBindTexture(GL_TEXTURE_2D, textures[index]);
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data); // define the parameters of the texture
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -204,12 +207,12 @@ bool loadTexture(int index) {
         stbi_image_free(data);
 		return false;
     }
-
+	
 	return true;
 }
 
 bool loadAllTextures() {
-	glGenTextures(11, textures);
+	glGenTextures(textureCount, textures);
 
 	for(int i = 0; i < textureCount; i++) {
 		if(!loadTexture(i)) {
@@ -248,17 +251,17 @@ int main(int argc, char** argv) {
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(75.0f, (WINDOW_WIDTH * 1.0) / (WINDOW_HEIGHT * 1.0), 10e-3, 10e3);
-
+		
 	if(!loadAllObjects()) {
 		perror("Erro ao carregar todos os arquivos");
 		return -1;
 	}
-
+	
 	if(!loadAllTextures()) {
 		perror("Erro ao carregar todos as texturas");
 		return -1;
 	}
-
+	
     bindObjectTexture();
 		
 	glutMainLoop();
@@ -319,7 +322,7 @@ void display() {
         }
         glEnd();
 
-		if(index >= 13) {
+		if(index >= 13 && index <= 18) {
 			glPopMatrix();
         }
         
@@ -343,15 +346,13 @@ void mouse(int x, int y) {
 			pitch = -89.0f;
 		}
 
-		glm::vec3 direction, cameraFront;
-		direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-		direction.y = sin(glm::radians(pitch));
-		direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-		cameraFront = glm::normalize(direction);
+		direction.x = cos(radians(yaw)) * cos(radians(pitch));
+		direction.y = sin(radians(pitch));
+		direction.z = sin(radians(yaw)) * cos(radians(pitch));
 
-		centerX = cameraFront.x;
-		centerY = cameraFront.y;
-		centerZ = cameraFront.z;
+		centerX = direction.x;
+		centerY = direction.y;
+		centerZ = direction.z;
 
 		glutWarpPointer(WINDOW_WIDTH / 2 , WINDOW_HEIGHT / 2);  //centers the cursor
 		flag = 1;
@@ -365,6 +366,7 @@ void mouse(int x, int y) {
 
 void keyboard(unsigned char key, int x, int y){
 	GLdouble movementSpeed = 0.5;
+
   	switch (key) {
 	case 27: // esc
 		exit(0);
@@ -376,14 +378,14 @@ void keyboard(unsigned char key, int x, int y){
 		eyeY -= movementSpeed;
 		break;
 	case 'w':
-		eyeX += cos(glm::radians(yaw)) * movementSpeed; 
-		eyeY += sin(glm::radians(pitch)) * movementSpeed;
-		eyeZ += sin(glm::radians(yaw)) * cos(glm::radians(pitch)) * movementSpeed;
+		eyeX += direction.x * movementSpeed; 
+		eyeY += direction.y * movementSpeed;
+		eyeZ += direction.z * movementSpeed;
 		break;
 	case 's':
-		eyeX -= cos(glm::radians(yaw)) * movementSpeed; 
-		eyeY -= sin(glm::radians(pitch)) * movementSpeed;
-		eyeZ -= sin(glm::radians(yaw)) * cos(glm::radians(pitch)) * movementSpeed;
+		eyeX -= direction.x * movementSpeed; 
+		eyeY -= direction.y * movementSpeed;
+		eyeZ -= direction.z * movementSpeed;
 		break;
     case 'J':
         if(windowAngle > 0.0) {
