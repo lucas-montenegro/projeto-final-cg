@@ -57,22 +57,20 @@ vector<string> texturePath = {
 	"../textures/colchao.png", // colchao
 	"../textures/janela.png", // janela
 	"../textures/madeira.jpg", // madeira clara
-	"../textures/madeira2.jpg", // madeira porta
-	"../textures/madeira2.jpg", // madeira escura 
+	"../textures/madeira2.jpeg", // madeira porta
+	"../textures/madeira3.jpeg", // madeira escura 
 	"../textures/metal2.jpg", // metal escuro
 	"../textures/pintura.jpg", // pintura 
 	"../textures/vidro.jpg", // vidro 
 	"../textures/metal1.jpg", // metal claro
 	"../textures/lixo.jpg", // lixeira
-    "../textures/velvet.jpeg",
-    "../textures/wood.jpeg",
 };
 
 const int objectCount = 22;
 
 Object objects[objectCount];
 
-const int textureCount = 14;
+const int textureCount = 12;
 
 GLuint textures[textureCount];
 
@@ -111,7 +109,7 @@ void bindObjectTexture() {
 	objects[10].textureId = 1;
 	objects[13].textureId = objects[14].textureId = 3;
 	objects[15].textureId = objects[16].textureId = 4;
-	objects[17].textureId = objects[18].textureId = objects[21].textureId = 13;
+	objects[17].textureId = objects[18].textureId = objects[21].textureId = 5;
 	objects[19].textureId = 11;
     objects[20].textureId = 1;
 }
