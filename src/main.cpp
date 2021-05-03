@@ -45,8 +45,10 @@ vector<string> objectPath = {
     "../obj/macaneta_direita.obj", // macaneta direita
     "../obj/macaneta_esquerda.obj", // macaneta esquerda
     "../obj/porta_direita.obj", // porta direita
-    "../obj/porta_esquerda.obj", // porta esqueda
-	"../obj/lixo.obj" // lixeira
+    "../obj/porta_esquerda.obj", // porta esquerda
+	"../obj/lixo.obj", // lixeira
+    "../obj/base_puff_final.obj",  // base do puff
+    "../obj/pes_puff_final.obj" , // pernas do puff
 };
 
 vector<string> texturePath = {
@@ -62,17 +64,19 @@ vector<string> texturePath = {
 	"../textures/vidro.jpg", // vidro 
 	"../textures/metal1.jpg", // metal claro
 	"../textures/lixo.jpg", // lixeira
+    "../textures/velvet.jpeg",
+    "../textures/wood.jpeg",
 };
 
-const int objectCount = 20;
+const int objectCount = 22;
 
 Object objects[objectCount];
 
-const int textureCount = 12;
+const int textureCount = 14;
 
 GLuint textures[textureCount];
 
-int WINDOW_WIDTH = 560, WINDOW_HEIGHT = 480;
+int WINDOW_WIDTH = 1920, WINDOW_HEIGHT = 1080;
 
 int displayFlag = 0;
 
@@ -80,7 +84,7 @@ GLdouble eyeX = 0.0, eyeY = 0.0, eyeZ = 5.0;
 GLdouble centerX = 0.0, centerY = 0.0, centerZ = 0.0;
 GLdouble upX = 0.0, upY = 1.0, upZ = 0.0;
 GLdouble lastPosX = WINDOW_WIDTH / 2.0, lastPosY = WINDOW_HEIGHT / 2.0;
-GLdouble sensivity = 0.1;
+GLdouble sensivity = 0.01;
 GLdouble doorAngle = 0.0;
 GLdouble windowAngle = 0.0;
 
@@ -107,8 +111,9 @@ void bindObjectTexture() {
 	objects[10].textureId = 1;
 	objects[13].textureId = objects[14].textureId = 3;
 	objects[15].textureId = objects[16].textureId = 4;
-	objects[17].textureId = objects[18].textureId = 5;
+	objects[17].textureId = objects[18].textureId = objects[21].textureId = 13;
 	objects[19].textureId = 11;
+    objects[20].textureId = 1;
 }
 
 bool loadObj(const char* path, Object *object) {
@@ -389,22 +394,22 @@ void keyboard(unsigned char key, int x, int y){
 		break;
     case 'J':
         if(windowAngle > 0.0) {
-            windowAngle -= 15.0;
+            windowAngle -= 3.0;
         }
         break;
     case 'j':
         if(windowAngle < 90) {
-            windowAngle += 15.0;
+            windowAngle += 3.0;
         }
         break;
     case 'P':
         if(doorAngle > 0.0) {
-            doorAngle -= 15.0;
+            doorAngle -= 3.0;
         }
         break;
     case 'p':
         if(doorAngle < 90.0) {
-            doorAngle += 15.0;
+            doorAngle += 3.0;
         }
         break;
 	}
