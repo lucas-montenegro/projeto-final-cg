@@ -7,8 +7,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#define PI 3.14
-
 using namespace std;
 using namespace glm;
 
@@ -74,19 +72,15 @@ const int textureCount = 12;
 
 GLuint textures[textureCount];
 
-int WINDOW_WIDTH = 1920, WINDOW_HEIGHT = 1080;
-
-int displayFlag = 0;
+int WINDOW_WIDTH = 1366, WINDOW_HEIGHT = 768;
 
 GLdouble eyeX = 0.0, eyeY = 0.0, eyeZ = 5.0;
 GLdouble centerX = 0.0, centerY = 0.0, centerZ = 0.0;
 GLdouble upX = 0.0, upY = 1.0, upZ = 0.0;
 GLdouble lastPosX = WINDOW_WIDTH / 2.0, lastPosY = WINDOW_HEIGHT / 2.0;
-GLdouble sensivity = 0.01;
+GLdouble sensivity = 0.2;
 GLdouble doorAngle = 0.0;
 GLdouble windowAngle = 0.0;
-
-vec3 direction;
 GLdouble pitch = 0.0, yaw = -90.0;
 
 bool flag = 0;
@@ -196,11 +190,12 @@ bool loadTexture(int index) {
             format = GL_RGBA;
 
         glBindTexture(GL_TEXTURE_2D, textures[index]);
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data); // define the parameters of the texture
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		// specify the 2d texture image
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data); 
+
+		// set texture parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         stbi_image_free(data);
@@ -238,7 +233,7 @@ int main(int argc, char** argv) {
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
 	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	glutCreateWindow("Quarto");
-	glutWarpPointer(WINDOW_WIDTH / 2 , WINDOW_HEIGHT / 2);  //centers the cursor
+	glutWarpPointer(WINDOW_WIDTH / 2 , WINDOW_HEIGHT / 2); //centers the cursor
 
 	glutDisplayFunc(display);
 	glutKeyboardFunc(keyboard);
@@ -271,7 +266,6 @@ int main(int argc, char** argv) {
 
 	return 0;
 }
-
 
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -328,16 +322,15 @@ void display() {
 		if(index >= 13 && index <= 18) {
 			glPopMatrix();
         }
-        
     }
-    displayFlag++;
+    
 	glutSwapBuffers();
 }
 
 void mouse(int x, int y) {
 	if(!flag) {
 		float xoffset = x - (WINDOW_WIDTH / 2);
-		float yoffset = (WINDOW_HEIGHT / 2) - y; // reversed since y-coordinates go from bottom to top
+		float yoffset = (WINDOW_HEIGHT / 2) - y; 
 
 		yaw += xoffset * sensivity;
 		pitch += yoffset * sensivity;
@@ -349,13 +342,9 @@ void mouse(int x, int y) {
 			pitch = -89.0f;
 		}
 
-		direction.x = cos(radians(yaw)) * cos(radians(pitch));
-		direction.y = sin(radians(pitch));
-		direction.z = sin(radians(yaw)) * cos(radians(pitch));
-
-		centerX = direction.x;
-		centerY = direction.y;
-		centerZ = direction.z;
+		centerX = cos(radians(yaw)) * cos(radians(pitch));
+		centerY = sin(radians(pitch));
+		centerZ = sin(radians(yaw)) * cos(radians(pitch));
 
 		glutWarpPointer(WINDOW_WIDTH / 2 , WINDOW_HEIGHT / 2);  //centers the cursor
 		flag = 1;
@@ -381,33 +370,33 @@ void keyboard(unsigned char key, int x, int y){
 		eyeY -= movementSpeed;
 		break;
 	case 'w':
-		eyeX += direction.x * movementSpeed; 
-		eyeY += direction.y * movementSpeed;
-		eyeZ += direction.z * movementSpeed;
+		eyeX += centerX * movementSpeed; 
+		eyeY += centerY * movementSpeed;
+		eyeZ += centerZ * movementSpeed;
 		break;
 	case 's':
-		eyeX -= direction.x * movementSpeed; 
-		eyeY -= direction.y * movementSpeed;
-		eyeZ -= direction.z * movementSpeed;
+		eyeX -= centerX * movementSpeed; 
+		eyeY -= centerY * movementSpeed;
+		eyeZ -= centerZ * movementSpeed;
 		break;
+	case 'j':
+        if(windowAngle < 90) {
+            windowAngle += 3.0;
+        }
+        break;
     case 'J':
         if(windowAngle > 0.0) {
             windowAngle -= 3.0;
         }
         break;
-    case 'j':
-        if(windowAngle < 90) {
-            windowAngle += 3.0;
-        }
-        break;
+	case 'p':
+		if(doorAngle < 90.0) {
+			doorAngle += 3.0;
+		}
+		break;
     case 'P':
         if(doorAngle > 0.0) {
             doorAngle -= 3.0;
-        }
-        break;
-    case 'p':
-        if(doorAngle < 90.0) {
-            doorAngle += 3.0;
         }
         break;
 	}
