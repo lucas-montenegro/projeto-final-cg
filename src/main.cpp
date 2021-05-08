@@ -82,6 +82,7 @@ GLdouble sensivity = 0.2;
 GLdouble doorAngle = 0.0;
 GLdouble windowAngle = 0.0;
 GLdouble pitch = 0.0, yaw = -90.0;
+GLint helicesAngle = 0;
 
 bool flag = 0;
 
@@ -280,6 +281,15 @@ void display() {
 	int i, index = 0;
 
     for(index = 0; index < objectCount; index++) {
+		if(index == 12) {
+			GLdouble diffX = 0.0, diffY = 11.47, diffZ = 1.95;
+			helicesAngle += 1;
+			helicesAngle %= 360;
+			glPushMatrix();
+            glTranslatef(diffX, diffY , diffZ);
+            glRotatef((GLdouble) helicesAngle, 0.0, 1.0f, 0.0f);
+		}
+
         if(index == 13) { // janela direita
 		    glPushMatrix();
             glTranslatef(objects[index].vertices[0].x, objects[index].vertices[0].y, objects[index].vertices[0].z);
@@ -319,12 +329,13 @@ void display() {
         }
         glEnd();
 
-		if(index >= 13 && index <= 18) {
+		if(index >= 12 && index <= 18) {
 			glPopMatrix();
         }
     }
     
 	glutSwapBuffers();
+	glutPostRedisplay();
 }
 
 void mouse(int x, int y) {
