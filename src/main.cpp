@@ -84,6 +84,16 @@ GLdouble windowAngle = 0.0;
 GLdouble pitch = 0.0, yaw = -90.0;
 GLint helicesAngle = 0;
 
+
+GLfloat lightPosition[] = {0.0f, 3.0f, 0.0f, 1.0f};
+GLfloat ambientLight[] = {0.3f, 0.3f, 0.3f, 1.0f};
+GLfloat diffuseLight[] = {0.6f, 0.6f, 0.6f, 1.0f};
+GLfloat specularLight[] = {1.0f, 1.0f, 1.0f, 1.0f};
+GLfloat lampLight[] = {0.0f, 0.0f, 1.0f, 1.0f};
+GLfloat lampLightDirection[] = {0.0f, -1.0f, 0.0f};
+GLint lampLightAngle = 50;
+GLfloat materialSpecularColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+
 bool flag = 0;
 
 void display();
@@ -224,6 +234,21 @@ bool loadAllTextures() {
 	return true;
 }
 
+void lightSettings() {
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
+		
+	
+	// lamp light settings
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, lampLight);
+	glLighti(GL_LIGHT1, GL_SPOT_CUTOFF, lampLightAngle);
+	
+
+	glMaterialf(GL_FRONT, GL_SHININESS, 128);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, materialSpecularColor);
+}
+
 int main(int argc, char** argv) {
 	if(argc == 3) {
 		WINDOW_WIDTH = atoi(argv[1]);
@@ -241,8 +266,6 @@ int main(int argc, char** argv) {
 	glutPassiveMotionFunc(mouse);
 
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_COLOR_MATERIAL);
 	glutSetCursor(GLUT_CURSOR_NONE);
@@ -260,6 +283,8 @@ int main(int argc, char** argv) {
 		perror("Erro ao carregar todos as texturas");
 		return -1;
 	}
+
+	lightSettings();
 	
     bindObjectTexture();
 		
@@ -275,6 +300,14 @@ void display() {
 	glLoadIdentity();
 	// View matrix
 	gluLookAt(eyeX, eyeY, eyeZ, eyeX + centerX, eyeY + centerY, eyeZ + centerZ, upX, upY, upZ);
+
+	GLfloat lampPosition[] = {objects[9].vertices[0].x, objects[9].vertices[0].z, -objects[9].vertices[0].y, 1.0};
+
+	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition); 
+	glLightfv(GL_LIGHT1, GL_POSITION, lampPosition); // abajur
+	glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, lampLightDirection);
+	
+
 	// Model matrix
 	glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
 	
