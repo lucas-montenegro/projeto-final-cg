@@ -43,4 +43,5 @@ Foram utilizadas as seguintes referências:
 * <https://github.com/valeriojr/monitoria-cg> 
 * <https://www.dca.ufrn.br/~ambj/opengl/>
 * <https://learnopengl.com/Getting-started/Camera>
+* <https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glLight.xml>
 
